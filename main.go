@@ -1,6 +1,14 @@
 package main
 
-import "log/slog"
+import (
+	"log/slog"
+	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/joaoguilherme2909/crudUsers/api"
+	"github.com/joaoguilherme2909/crudUsers/store"
+)
 
 func main() {
 	if err := run(); err != nil {
@@ -11,6 +19,25 @@ func main() {
 }
 
 func run() error {
+
+	db := store.UserRepo{}
+	id := uuid.NewRandom()
+	db[id] = store.User{
+		FirstName: "Joao",
+		LastName:  "Guilherme",
+		Bio:       "A Full stack developer",
+		Id:        id,
+	}
+
+	handler := api.NewHandler(db)
+
+	s := http.Server{
+		Addr:         ":8080",
+		Handler:      handler,
+		ReadTimeout:  10 * time.Second,
+		IdleTimeout:  time.Minute,
+		WriteTimeout: 10 * time.Second,
+	}
 
 	return nil
 }
