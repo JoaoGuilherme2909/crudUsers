@@ -21,7 +21,9 @@ func main() {
 func run() error {
 
 	db := store.UserRepo{}
-	id := uuid.NewRandom()
+
+	id, _ := uuid.NewRandom()
+
 	db[id] = store.User{
 		FirstName: "Joao",
 		LastName:  "Guilherme",
@@ -37,6 +39,10 @@ func run() error {
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,
 		WriteTimeout: 10 * time.Second,
+	}
+
+	if err := s.ListenAndServe(); err != nil {
+		return err
 	}
 
 	return nil
