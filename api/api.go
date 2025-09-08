@@ -91,7 +91,7 @@ func AddUser(db store.UserRepo) http.HandlerFunc {
 			return
 		}
 
-		utils.JsonResponse(w, http.StatusCreated, map[strig]any{
+		utils.JsonResponse(w, http.StatusCreated, map[string]any{
 			"user": user,
 		})
 	}
