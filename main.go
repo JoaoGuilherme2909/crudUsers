@@ -24,11 +24,13 @@ func run() error {
 
 	id, _ := uuid.NewRandom()
 
-	db[id] = store.User{
+	convertedId := id.String()
+
+	db[convertedId] = store.User{
 		FirstName: "Joao",
 		LastName:  "Guilherme",
 		Bio:       "A Full stack developer",
-		Id:        id,
+		Id:        convertedId,
 	}
 
 	handler := api.NewHandler(db)
