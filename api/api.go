@@ -85,14 +85,14 @@ func AddUser(db store.UserRepo) http.HandlerFunc {
 		user, err := db.Insert(body.FirstName, body.LastName, body.Bio)
 
 		if err != nil {
-			utils.JsonResponse(w, http.StatusBadRequest, map[string]any {
-				"error": "Could not insert user on database"
+			utils.JsonResponse(w, http.StatusBadRequest, map[string]any{
+				"error": "Could not insert user on database",
 			})
 			return
 		}
 
-		utils.JsonResponse(w, http.StatusCreated, map[strig]any {
-			"user": user
+		utils.JsonResponse(w, http.StatusCreated, map[strig]any{
+			"user": user,
 		})
 	}
 }
