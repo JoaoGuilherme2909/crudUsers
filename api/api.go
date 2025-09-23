@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -18,6 +17,7 @@ type UserRequest struct {
 	Bio       string `json:"bio"`
 }
 
+// TODO: adaptar para banco de dados
 func NewHandler(db store.UserRepo) http.Handler {
 	r := chi.NewMux()
 
@@ -27,10 +27,10 @@ func NewHandler(db store.UserRepo) http.Handler {
 
 	r.Get("/users", getUsers(db))
 	r.Get("/users/{id}", getUserById(db))
-	r.Post("/users", addUser(db))
-	r.Patch("/users/{id}", update(db))
-	r.Delete("/users/{id}", deleteUser(db))
-
+	/*	r.Post("/users", addUser(db))
+		r.Patch("/users/{id}", update(db))
+		r.Delete("/users/{id}", deleteUser(db))
+	*/
 	return r
 }
 
@@ -38,8 +38,7 @@ func getUserById(db store.UserRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		user, err := db.FindById(id)
-
+		user, err := db.FindById(r.Context(), id)
 		if err != nil {
 			utils.JsonResponse(w, http.StatusNotFound, map[string]string{
 				"errors": "User Not Found",
@@ -53,18 +52,22 @@ func getUserById(db store.UserRepo) http.HandlerFunc {
 
 func getUsers(db store.UserRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		users := db.FindAll()
+		users, err := db.FindAll(r.Context())
+		if err != nil {
+			utils.JsonResponse(w, http.StatusInternalServerError, map[string]any{"users": users})
+			return
+		}
 
 		utils.JsonResponse(w, http.StatusOK, map[string]any{"users": users})
 	}
 }
 
+/*
 func addUser(db store.UserRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body UserRequest
 
 		err := json.NewDecoder(r.Body).Decode(&body)
-
 		if err != nil {
 			utils.JsonResponse(w, http.StatusUnprocessableEntity, map[string]any{
 				"error": err.Error(),
@@ -86,7 +89,6 @@ func addUser(db store.UserRepo) http.HandlerFunc {
 		}
 
 		user, err := db.Insert(body.FirstName, body.LastName, body.Bio)
-
 		if err != nil {
 			utils.JsonResponse(w, http.StatusBadRequest, map[string]any{
 				"error": "Could not insert user on database",
@@ -106,7 +108,6 @@ func update(db store.UserRepo) http.HandlerFunc {
 		var body UserRequest
 
 		err := json.NewDecoder(r.Body).Decode(&body)
-
 		if err != nil {
 			utils.JsonResponse(w, http.StatusUnprocessableEntity, map[string]any{
 				"error": err.Error(),
@@ -134,7 +135,6 @@ func update(db store.UserRepo) http.HandlerFunc {
 			LastName:  body.LastName,
 			Bio:       body.Bio,
 		})
-
 		if err != nil {
 			utils.JsonResponse(w, http.StatusNotFound, map[string]any{
 				"error": err.Error(),
@@ -153,7 +153,6 @@ func deleteUser(db store.UserRepo) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 
 		user, err := db.Delete(id)
-
 		if err != nil {
 			utils.JsonResponse(w, http.StatusOK, map[string]any{
 				"error": err.Error(),
@@ -165,4 +164,4 @@ func deleteUser(db store.UserRepo) http.HandlerFunc {
 			"user": user,
 		})
 	}
-}
+}*/

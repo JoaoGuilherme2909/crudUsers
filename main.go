@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/joaoguilherme2909/crudUsers/api"
 	"github.com/joaoguilherme2909/crudUsers/store"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -19,18 +23,20 @@ func main() {
 }
 
 func run() error {
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
 
-	db := store.UserRepo{}
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
 
-	id, _ := uuid.NewRandom()
+	defer conn.Close(context.Background())
 
-	convertedId := id.String()
-
-	db[convertedId] = store.User{
-		FirstName: "Joao",
-		LastName:  "Guilherme",
-		Bio:       "A Full stack developer",
-		Id:        convertedId,
+	db := store.UserRepo{
+		DbConn: conn,
 	}
 
 	handler := api.NewHandler(db)

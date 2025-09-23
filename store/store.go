@@ -1,9 +1,10 @@
 package store
 
 import (
-	"errors"
+	"context"
+	"fmt"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type User struct {
@@ -13,7 +14,9 @@ type User struct {
 	Id        string `json:"id"`
 }
 
-type UserRepo map[string]User
+type UserRepo struct {
+	DbConn *pgx.Conn
+}
 
 func convertMapToSlice[K comparable, V any](inputMap map[K]V) []V {
 	var result []V
@@ -23,22 +26,57 @@ func convertMapToSlice[K comparable, V any](inputMap map[K]V) []V {
 	return result
 }
 
-func (ur UserRepo) FindAll() []User {
-	return convertMapToSlice(ur)
+func (ur UserRepo) FindAll(ctx context.Context) ([]User, error) {
+	rows, err := ur.DbConn.Query(ctx, "Select id, first_name, last_name,bio from users")
+	if err != nil {
+		return []User{}, err
+	}
+
+	defer rows.Close()
+
+	var users []User
+
+	for rows.Next() {
+		var user User
+		err := rows.Scan(
+			&user.Id,
+			&user.FirstName,
+			&user.LastName,
+			&user.Bio,
+		)
+		if err != nil {
+			return []User{}, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return []User{}, fmt.Errorf("Error iterating users rows: %w", err)
+	}
+
+	return users, nil
 }
 
-func (ur UserRepo) FindById(id string) (User, error) {
-	user, ok := ur[id]
-	if !ok {
-		return User{}, errors.New("User not found")
+func (ur UserRepo) FindById(ctx context.Context, id string) (User, error) {
+	sql := `
+		SELECT id, first_name, last_name, bio 
+		FROM users
+		WHERE id = $1
+	`
+
+	var user User
+	err := ur.DbConn.QueryRow(ctx, sql, id).Scan(&user.Id, &user.FirstName, &user.LastName, &user.Bio)
+	if err != nil {
+		return User{}, fmt.Errorf("Error searching for user: %w", err)
 	}
 
 	return user, nil
 }
 
+// TODO: Adaptar para a banco de dados
+/*
 func (ur UserRepo) Insert(firstName, lastName, bio string) (User, error) {
 	id, err := uuid.NewRandom()
-
 	if err != nil {
 		return User{}, err
 	}
@@ -89,4 +127,4 @@ func (ur UserRepo) Delete(id string) (User, error) {
 	delete(ur, id)
 
 	return user, nil
-}
+}*/
