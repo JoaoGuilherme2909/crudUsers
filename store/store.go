@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -73,30 +74,29 @@ func (ur UserRepo) FindById(ctx context.Context, id string) (User, error) {
 	return user, nil
 }
 
-// TODO: Adaptar para a banco de dados
-/*
-func (ur UserRepo) Insert(firstName, lastName, bio string) (User, error) {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return User{}, err
-	}
-
+func (ur UserRepo) Insert(ctx context.Context, firstName, lastName, bio string) (User, error) {
 	user := User{
 		FirstName: firstName,
 		LastName:  lastName,
 		Bio:       bio,
-		Id:        id.String(),
 	}
 
-	ur[id.String()] = user
+	sql := `
+		INSERT INTO users
+		VALUES(DEFAULT, $1, $2, $3)
+	`
+
+	_, err := ur.DbConn.Exec(ctx, sql, user.FirstName, user.LastName, user.Bio)
+	if err != nil {
+		return User{}, fmt.Errorf("error creating user: %w", err)
+	}
 
 	return user, nil
 }
 
-func (ur UserRepo) Update(id string, u User) (User, error) {
-	user, ok := ur[id]
-
-	if !ok {
+func (ur UserRepo) Update(ctx context.Context, id string, u User) (User, error) {
+	user, err := ur.FindById(ctx, id)
+	if err != nil {
 		return User{}, errors.New("User not found")
 	}
 
@@ -112,19 +112,29 @@ func (ur UserRepo) Update(id string, u User) (User, error) {
 		user.Bio = u.Bio
 	}
 
-	ur[id] = user
+	sql := `
+		UPDATE users
+		SET first_name = $2, last_name = $3, bio = $4
+		WHERE id = $1 
+	`
+
+	_, err = ur.DbConn.Exec(ctx, sql, user.Id, user.FirstName, user.LastName, user.Bio)
+	if err != nil {
+		return User{}, fmt.Errorf("error updating user: %w", err)
+	}
 
 	return user, nil
 }
 
-func (ur UserRepo) Delete(id string) (User, error) {
-	user, ok := ur[id]
+func (ur UserRepo) Delete(ctx context.Context, id string) error {
+	sql := `
+		DELETE FROM users WHERE id = $1
+	`
 
-	if !ok {
-		return User{}, errors.New("User not found")
+	_, err := ur.DbConn.Exec(ctx, sql, id)
+	if err != nil {
+		return errors.New("User not found")
 	}
 
-	delete(ur, id)
-
-	return user, nil
-}*/
+	return nil
+}

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -17,7 +18,6 @@ type UserRequest struct {
 	Bio       string `json:"bio"`
 }
 
-// TODO: adaptar para banco de dados
 func NewHandler(db store.UserRepo) http.Handler {
 	r := chi.NewMux()
 
@@ -27,10 +27,10 @@ func NewHandler(db store.UserRepo) http.Handler {
 
 	r.Get("/users", getUsers(db))
 	r.Get("/users/{id}", getUserById(db))
-	/*	r.Post("/users", addUser(db))
-		r.Patch("/users/{id}", update(db))
-		r.Delete("/users/{id}", deleteUser(db))
-	*/
+	r.Post("/users", addUser(db))
+	r.Patch("/users/{id}", update(db))
+	r.Delete("/users/{id}", deleteUser(db))
+
 	return r
 }
 
@@ -62,7 +62,6 @@ func getUsers(db store.UserRepo) http.HandlerFunc {
 	}
 }
 
-/*
 func addUser(db store.UserRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body UserRequest
@@ -88,7 +87,7 @@ func addUser(db store.UserRepo) http.HandlerFunc {
 			return
 		}
 
-		user, err := db.Insert(body.FirstName, body.LastName, body.Bio)
+		user, err := db.Insert(r.Context(), body.FirstName, body.LastName, body.Bio)
 		if err != nil {
 			utils.JsonResponse(w, http.StatusBadRequest, map[string]any{
 				"error": "Could not insert user on database",
@@ -130,7 +129,7 @@ func update(db store.UserRepo) http.HandlerFunc {
 			return
 		}
 
-		user, err := db.Update(id, store.User{
+		user, err := db.Update(r.Context(), id, store.User{
 			FirstName: body.FirstName,
 			LastName:  body.LastName,
 			Bio:       body.Bio,
@@ -152,7 +151,7 @@ func deleteUser(db store.UserRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		user, err := db.Delete(id)
+		err := db.Delete(r.Context(), id)
 		if err != nil {
 			utils.JsonResponse(w, http.StatusOK, map[string]any{
 				"error": err.Error(),
@@ -160,8 +159,8 @@ func deleteUser(db store.UserRepo) http.HandlerFunc {
 			return
 		}
 
-		utils.JsonResponse(w, http.StatusOK, map[string]any{
-			"user": user,
+		utils.JsonResponse(w, http.StatusNoContent, map[string]any{
+			"user": "User deleted succesfully",
 		})
 	}
-}*/
+}
